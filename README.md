@@ -11,3 +11,7 @@
 ## API documentation
 [Spotify](https://developer.spotify.com/documentation/web-api/reference/#/)
 [IMDb](https://imdb-api.com/API)
+
+## datasets
+[documentation](https://www.imdb.com/interfaces/)
+[download](https://datasets.imdbws.com/)
