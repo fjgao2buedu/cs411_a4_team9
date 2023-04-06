@@ -2,9 +2,9 @@
 
 ## prototype
 ```
-cd into muvieview
+#cd into muvieview
 npm run-script build
-cd into muvie
+#cd into muvie
 npm start
 ```
 
