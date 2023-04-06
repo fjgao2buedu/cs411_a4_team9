@@ -1,23 +1,39 @@
-import logo from './logo.svg';
-import './App.css';
+import { useState } from "react";
+import "./App.css";
+import { Grid, Typography } from "@mui/material";
+import SearchBar from "./components/SearchBar";
+import RecordTable from "./components/RecordTable";
 
 function App() {
+  const [content, setContent] = useState([]);
+  const callback = (content) => {
+    setContent(content);
+  };
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div style={{ width: "100vw", height: "100vh" }}>
+      <Grid container spacing={2} style={{ padding: "1rem" }}>
+        <Grid xs={12} container alignItems="center" justifyContent="center">
+          <Typography variant="h2" gutterBottom>
+            Muvie Prototype
+          </Typography>
+        </Grid>
+        <Grid xs={12} md={4}>
+          <Typography variant="h4" gutterBottom>
+            Search
+          </Typography>
+          <div style={{ width: "100%" }}>
+            <SearchBar parentCallback={callback}></SearchBar>
+          </div>
+        </Grid>
+        <Grid xs={12} md={8}>
+          <Typography variant="h4" gutterBottom>
+            Results
+          </Typography>
+          <div style={{ height: 600, width: "100%" }}>
+            <RecordTable data={content} />
+          </div>
+        </Grid>
+      </Grid>
     </div>
   );
 }
