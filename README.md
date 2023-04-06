@@ -1,11 +1,12 @@
 # cs411_lab_team9
 
 ## prototype
-
+```
 cd into muvieview
 npm run-script build
 cd into muvie
 npm start
+```
 
 ## file structure
 ```
