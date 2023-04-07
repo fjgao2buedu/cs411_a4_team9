@@ -1,5 +1,5 @@
 import './App.css';
-import {useEffect, useState} from 'react';
+import { useEffect, useState } from 'react';
 
 function App() {
   const CLIENT_ID = "3f958fdf5b01422690ef323614cca86c"
@@ -12,18 +12,18 @@ function App() {
   const [artists, setArtists] = useState([])
   const searchArtists = async (e) => {
     e.preventDefault()
-    const {data} = await fetch("https://api.spotify.com/v1/search", {
-        headers: {
-            Authorization: `Bearer ${token}`
-        },
-        params: {
-            q: searchKey,
-            type: "artist"
-        }
+    const { data } = await fetch("https://api.spotify.com/v1/search", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      params: {
+        q: searchKey,
+        type: "artist"
+      }
     })
 
     setArtists(data.artists.items)
-}
+  }
   useEffect(() => {
     const hash = window.location.hash
     let token = window.localStorage.getItem("token")
@@ -38,30 +38,45 @@ function App() {
     setToken(token)
 
   }, [])
-  
+
   const logout = () => {
     setToken("")
     window.localStorage.removeItem("token")
   }
   const renderArtists = () => {
     return artists.map(artist => (
-        <div key={artist.id}>
-            {artist.images.length ? <img width={"100%"} src={artist.images[0].url} alt=""/> : <div>No Image</div>}
-            {artist.name}
-        </div>
+      <div key={artist.id}>
+        {artist.images.length ? <img width={"100%"} src={artist.images[0].url} alt="" /> : <div>No Image</div>}
+        {artist.name}
+      </div>
     ))
   }
   return (
     <div className="App">
+
       <header className="App-header">
+
         <h1>Spotify React</h1>
+
         {!token ?
           <a href={`${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=${RESPONSE_TYPE}`}>Login
             to Spotify</a>
           : <button onClick={logout}>Logout</button>}
+        {token ?
+          <form onSubmit={searchArtists}>
+            <input type="text" onChange={e => setSearchKey(e.target.value)} />
+            <button type={"submit"}>Search</button>
+          </form>
+
+          : <h2> Please Login </h2>}
+        {renderArtists()}
+
       </header>
+
+
     </div>
   );
 }
 
 export default App;
+
