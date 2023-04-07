@@ -1,6 +1,6 @@
 import './App.css';
 import {useEffect, useState} from 'react';
-import fetch from 'node-fetch';
+
 function App() {
   const CLIENT_ID = "3f958fdf5b01422690ef323614cca86c"
   const REDIRECT_URI = "http://localhost:3000"
