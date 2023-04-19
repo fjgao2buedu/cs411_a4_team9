@@ -84,6 +84,12 @@ def callback():
     display_arr = [profile_data] + playlist_data["items"]
     return render_template("index.html", sorted_array=display_arr)
 
+api_url = "https://catfact.ninja/fact"
+@app.route("/callapi")
+def call_api():
+    response = requests.get(api_url)
+    return response.json()
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=PORT)
