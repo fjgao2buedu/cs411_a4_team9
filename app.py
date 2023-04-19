@@ -11,9 +11,9 @@ from dotenv import load_dotenv
 
 
 app = Flask(__name__)
-FLASK_ENV = os.getenv("FLASK_ENV", "dev")
+DEBUG_ENV = os.getenv("DEBUG_ENV", "dev")
 TABLENAME = "movie_list"
-if FLASK_ENV != "dev":
+if DEBUG_ENV != "dev":
     load_dotenv(".env")
     REQUIRED_ENV_VARS = {"database", "host", "user", "password", "port"}
     if diff := REQUIRED_ENV_VARS.difference(os.environ):
@@ -39,7 +39,7 @@ SPOTIFY_API_URL = f"{SPOTIFY_API_BASE_URL}/{API_VERSION}"
 
 # Server-side Parameters
 CLIENT_SIDE_URL = "http://127.0.0.1"
-PORT = 8080
+PORT = 5000
 REDIRECT_URI = f"{CLIENT_SIDE_URL}:{PORT}/callback/q"
 SCOPE = "playlist-modify-public playlist-modify-private"
 STATE = ""
@@ -122,7 +122,7 @@ def read_db(user_id: str):
     some_information_about_user = (
         f"pretend it queries user {{{user_id}}} in the database. (placeholder in dev)"
     )
-    if FLASK_ENV != "dev":
+    if DEBUG_ENV != "dev":
         try:
             # connect to the PostgreSQL database
             conn = psycopg2.connect(config)  # set in .env, don't publish .env to github
@@ -144,7 +144,7 @@ def read_db(user_id: str):
 
 @app.route(
     "/db/update/<user_id>",
-    methods=(lambda: ["GET", "POST"], lambda: ["POST"])[FLASK_ENV != "dev"](),
+    methods=(lambda: ["GET", "POST"], lambda: ["POST"])[DEBUG_ENV != "dev"](),
 )
 def update_user_movie_recommendation(user_id: str):
     def create_user_if_not_exist(user_id: str, cursor):
@@ -161,7 +161,7 @@ def update_user_movie_recommendation(user_id: str):
 
     movie_list = f"pretend it updates user {{{user_id}}} with movie_list [Test,None,Nah,OMG,Ahh] in the database. (placeholder in dev)"
     updated_rows = 0
-    if FLASK_ENV != "dev":
+    if DEBUG_ENV != "dev":
         movie_list = call_api()["movie_list"]
         try:
             # connect to the PostgreSQL database
