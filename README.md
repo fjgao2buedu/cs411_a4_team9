@@ -1,12 +1,14 @@
-# how to run the app
+# how to run the app in project root folder
 
+```
 python3 -m venv venv
 
 source venv/bin/activate
 
 pip install -r requirements.txt
 
-python3 app.py
+python3 app.py OR flask run
+```
 
 # local testing
 
