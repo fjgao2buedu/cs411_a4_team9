@@ -23,6 +23,7 @@ if FLASK_ENV != "dev":
     user = os.environ["user"]
     password = os.environ["password"]
     port = os.environ["port"]
+    config = (database, host, user, password, port)
 
 
 #  Client Keys
@@ -124,9 +125,7 @@ def read_db(user_id: str):
     if FLASK_ENV != "dev":
         try:
             # connect to the PostgreSQL database
-            conn = psycopg2.connect(
-                database, host, user, password, port
-            )  # set in .env, don't publish .env to github
+            conn = psycopg2.connect(config)  # set in .env, don't publish .env to github
             # create a new cursor
             cursor = conn.cursor()
             # execute SELECT statement
@@ -166,9 +165,7 @@ def update_user_movie_recommendation(user_id: str):
         movie_list = call_api()["movie_list"]
         try:
             # connect to the PostgreSQL database
-            conn = psycopg2.connect(
-                database, host, user, password, port
-            )  # set in .env, don't publish .env to github
+            conn = psycopg2.connect(config)  # set in .env, don't publish .env to github
             # create a new cursor
             cursor = conn.cursor()
             # create user if not exist
