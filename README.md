@@ -1,4 +1,4 @@
-# how to run the app in project root folder
+# how to run the app in project root folder (in vscode terminal)
 
 ```
 python3 -m venv venv
