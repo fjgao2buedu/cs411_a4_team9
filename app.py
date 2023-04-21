@@ -16,7 +16,8 @@ TABLENAME = "movie_list"
 if DEBUG_ENV != "dev":
     load_dotenv(".env")
     REQUIRED_ENV_VARS = {"database", "host", "user", "password", "port"}
-    if diff := REQUIRED_ENV_VARS.difference(os.environ):
+    diff = REQUIRED_ENV_VARS.difference(os.environ)
+    if diff > 0:
         raise EnvironmentError(f"Failed because {diff} are not set")
     database = os.environ["database"]
     host = os.environ["host"]
