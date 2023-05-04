@@ -26,10 +26,10 @@ if DEBUG_ENV != "dev":
     port = os.environ["port"]
     config = (database, host, user, password, port)
 
-
+load_dotenv(".env")
 #  Client Keys
-CLIENT_ID = ""
-CLIENT_SECRET = ""
+CLIENT_ID = os.environ["client_id"]
+CLIENT_SECRET = os.environ["client_secret"]
 
 # Spotify URLS
 SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize"
@@ -121,6 +121,26 @@ def index():
     auth_url = f"{SPOTIFY_AUTH_URL}/?{url_args}"
     return redirect(auth_url)
 
+@app.route("/test/q")
+def test():
+    test_data={
+  "genres": ["acoustic", "afrobeat", "alt-rock", "alternative", "ambient", "anime",
+             "black-metal", "bluegrass", "blues", "bossanova", "brazil", "breakbeat", "british", "cantopop", 
+             "chicago-house", "children", "chill", "classical", "club", "comedy", "country", "dance", "dancehall", 
+             "death-metal", "deep-house", "detroit-techno", "disco", "disney", "drum-and-bass", "dub", "dubstep", "edm", 
+             "electro", "electronic", "emo", "folk", "forro", "french", "funk", "garage", "german", "gospel", "goth", "grindcore", 
+             "groove", "grunge", "guitar", "happy", "hard-rock", "hardcore", "hardstyle", "heavy-metal", "hip-hop", "holidays",
+               "honky-tonk", "house", "idm", "indian", "indie", "indie-pop", "industrial", "iranian", "j-dance", "j-idol", "j-pop",
+               "j-rock", "jazz", "k-pop", "kids", "latin", "latino", "malay", "mandopop", "metal", "metal-misc", "metalcore", 
+               "minimal-techno", "movies", "mpb", "new-age", "new-release", "opera", "pagode", "party", "philippines-opm", "piano", 
+               "pop", "pop-film", "post-dubstep", "power-pop", "progressive-house", "psych-rock", "punk", "punk-rock", "r-n-b", 
+               "rainy-day", "reggae", "reggaeton", "road-trip", "rock", "rock-n-roll", "rockabilly", "romance", "sad", "salsa", 
+               "samba", "sertanejo", "show-tunes", "singer-songwriter", "ska", "sleep", "songwriter", "soul", "soundtracks",
+                 "spanish", "study", "summer", "swedish", "synth-pop", "tango", "techno", "trance", "trip-hop", "turkish", 
+                 "work-out", "world-music"]
+    }
+    test_data = test_data["genres"]
+    return render_template("index.html", sorted_array=test_data)
 
 @app.route("/callback/q")
 def callback():
@@ -158,9 +178,21 @@ def callback():
         playlist_api_endpoint, headers=authorization_header
     )
     playlist_data = json.loads(playlists_response.text)
+    
+    # get genre
+    # topitem_api_endpoint= f'{SPOTIFY_API_URL}/me/top/artists'
+    # topitem_genre=requests.get(
+    #     topitem_api_endpoint, headers=authorization_header
+    # )
+    # print(str(topitem_genre))
+    # topitem_data=topitem_genre.json()
+    # json.loads(topitem_genre.text)
 
     # Combine profile and playlist data to display
     display_arr = [profile_data] + playlist_data["items"]
+    # display_arr = topitem_data["items"]
+    # display_genres= [genre for genres in display_arr["genres"] for genre in genres]
+
     return render_template("index.html", sorted_array=display_arr)
 
 
