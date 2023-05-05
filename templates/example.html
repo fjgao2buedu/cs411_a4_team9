@@ -27,36 +27,36 @@
         <div class="banner">
             <ul class="list">
                 <li class="on"><a href="#"><img src="../static/picture/b1.jpg" alt="" style="width:1300px;height:500px;"" /></a></li>
-                        </ul>
+            </ul>
+        </div>
+        <div class=" con_area">
+            <div class="container">
+                <div class="jd_con">
+                    <div class="con_top">
+                        <h1>
+                            <i class="icofont icofont-coffee-cup"></i>
+                            You may like:
+                        </h1>
                     </div>
-                    <div class=" con_area">
-                        <div class="container">
-                            <div class="jd_con">
-                                <div class="con_top">
-                                    <h1>
-                                        <i class="icofont icofont-coffee-cup"></i>
-                                        You may like:
-                                    </h1>
-                                </div>
+                </div>
+                <div class="news-slide-area">
+                    <div class="news-slider">
+                        {% for item in sorted_array%}
+                        <div class="single-news">
+                            <div class="news-bg-1"></div>
+                            <div class="news-date">
+                                <h1>{{item.release_date}}</h1>
                             </div>
-                            <div class="news-slide-area">
-                                <div class="news-slider">
-                                    {% for item in sorted_array%}
-                                    <div class="single-news">
-                                        <div class="news-bg-1"></div>
-                                        <div class="news-date">
-                                            <h1>{{item.release_date}}</h1>
-                                        </div>
-                                        <div class="news-content">
-                                            <h2>{{item.original_title}}</h2>
-                                            <p>{{item.overview}}</p>
-                                        </div>
-                                        <a href="https://www.imdb.com/find/?q={{item.original_title}}">Read More</a>
-                                    </div>
-                                    {% endfor %}
-                                </div>
+                            <div class="news-content">
+                                <h2>{{item.original_title}}</h2>
+                                <p>{{item.overview}}</p>
                             </div>
+                            <a href="https://www.imdb.com/find/?q={{item.original_title}}">Read More</a>
                         </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
     <!--end start-->
