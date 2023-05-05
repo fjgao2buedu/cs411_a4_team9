@@ -1,284 +1,295 @@
-import json
-from flask import Flask, request, redirect, g, render_template
-import requests
-from urllib.parse import quote
+# importing necessary libraries
+from flask import Flask, request, render_template, url_for, session, redirect
+import spotipy
+from spotipy.oauth2 import SpotifyOAuth
 import psycopg2
-import os
-from dotenv import load_dotenv
+import time
+import json
+import urllib.request
 
-# Authentication Steps, paramaters, and responses are defined at https://developer.spotify.com/web-api/authorization-guide/
-# Visit this url to see all the steps, parameters, and expected response.
+app = Flask(__name__, template_folder='template')
 
-
-app = Flask(__name__)
-DEBUG_ENV = os.getenv("DEBUG_ENV", "dev")
-TABLENAME = "movie_list"
-if DEBUG_ENV != "dev":
-    load_dotenv(".env")
-    REQUIRED_ENV_VARS = {"database", "host", "user", "password", "port"}
-    diff = REQUIRED_ENV_VARS.difference(os.environ)
-    if diff > 0:
-        raise EnvironmentError(f"Failed because {diff} are not set")
-    database = os.environ["database"]
-    host = os.environ["host"]
-    user = os.environ["user"]
-    password = os.environ["password"]
-    port = os.environ["port"]
-    config = (database, host, user, password, port)
-
-load_dotenv(".env")
-#  Client Keys
-CLIENT_ID = os.environ["client_id"]
-CLIENT_SECRET = os.environ["client_secret"]
-
-# Spotify URLS
-SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize"
-SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token"
-SPOTIFY_API_BASE_URL = "https://api.spotify.com"
-API_VERSION = "v1"
-SPOTIFY_API_URL = f"{SPOTIFY_API_BASE_URL}/{API_VERSION}"
-
-# Server-side Parameters
-CLIENT_SIDE_URL = "http://127.0.0.1"
-PORT = 5000
-REDIRECT_URI = f"{CLIENT_SIDE_URL}:{PORT}/callback/q"
-SCOPE = "playlist-modify-public playlist-modify-private"
-STATE = ""
-SHOW_DIALOG_bool = True
-SHOW_DIALOG_str = str(SHOW_DIALOG_bool).lower()
-
-auth_query_parameters = {
-    "response_type": "code",
-    "redirect_uri": REDIRECT_URI,
-    "scope": SCOPE,
-    # "state": STATE,
-    # "show_dialog": SHOW_DIALOG_str,
-    "client_id": CLIENT_ID,
-}
+# secret key and cookie for web app
+app.secret_key = ''
+app.config['SESSION_COOKIE_NAME'] = ''
+TOKEN_INFO = ''
+IMDB_api_key = ''
 
 
-@app.route("/example")
-def example():
-    example_data = {
-        "page": 1,
-        "results": [
-            {
-                "poster_path": "/e1mjopzAS2KNsvpbpahQ1a6SkSn.jpg",
-                "overview": "From DC Comics comes the Suicide Squad, an antihero team of incarcerated supervillains who act as deniable assets for the United States government, undertaking high-risk black ops missions in exchange for commuted prison sentences.",
-                "release_date": "2016-08-03",
-                "genre_ids": [14, 28, 80],
-                "id": 297761,
-                "original_title": "Suicide Squad",
-                "original_language": "en",
-                "title": "Suicide Squad",
-                "backdrop_path": "/ndlQ2Cuc3cjTL7lTynw6I4boP4S.jpg",
-                "popularity": 48.261451,
-                "vote_count": 1466,
-                "vote_average": 5.91,
-            },
-            {
-                "poster_path": "/lFSSLTlFozwpaGlO31OoUeirBgQ.jpg",
-                "overview": "The most dangerous former operative of the CIA is drawn out of hiding to uncover hidden truths about his past.",
-                "release_date": "2016-07-27",
-                "genre_ids": [28, 53],
-                "id": 324668,
-                "original_title": "Jason Bourne",
-                "original_language": "en",
-                "title": "Jason Bourne",
-                "backdrop_path": "/AoT2YrJUJlg5vKE3iMOLvHlTd3m.jpg",
-                "popularity": 30.690177,
-                "vote_count": 649,
-                "vote_average": 5.25,
-            },
-            {
-                "poster_path": "/hU0E130tsGdsYa4K9lc3Xrn5Wyt.jpg",
-                "overview": "One year after outwitting the FBI and winning the public’s adulation with their mind-bending spectacles, the Four Horsemen resurface only to find themselves face to face with a new enemy who enlists them to pull off their most dangerous heist yet.",
-                "release_date": "2016-06-02",
-                "genre_ids": [28, 12, 35, 80, 9648, 53],
-                "id": 291805,
-                "original_title": "Now You See Me 2",
-                "original_language": "en",
-                "title": "Now You See Me 2",
-                "backdrop_path": "/zrAO2OOa6s6dQMQ7zsUbDyIBrAP.jpg",
-                "popularity": 29.737342,
-                "vote_count": 684,
-                "vote_average": 6.64,
-            }
-        ],
-        "total_results": 19629,
-        "total_pages": 982,
-    }
-    example_data = example_data["results"]
-    return render_template("example.html", sorted_array=example_data)
-
-
-@app.route("/")
-def index():
-    # Auth Step 1: Authorization
-    url_args = "&".join(
-        [f"{key}={quote(val)}" for key, val in auth_query_parameters.items()]
+# function to connect to database where spotify data will be inserted
+def database_connect():
+    conn = psycopg2.connect(
+        database="Spotifydata",
+        user="postgres",
+        password='',
+        host="localhost",
+        port="5432"
     )
-    auth_url = f"{SPOTIFY_AUTH_URL}/?{url_args}"
+    return conn
+
+
+# connect to database and create user table to store access token and movies
+conn = database_connect()
+cur = conn.cursor()
+cur.execute(
+    'CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, access_token text, movies text[])')
+
+# route to login page
+
+
+@app.route('/')
+def login():
+    sp_oauth = create_spotify_oauth()
+    auth_url = sp_oauth.get_authorize_url()
     return redirect(auth_url)
 
-@app.route("/test/q")
-def test():
-    test_data={
-  "genres": ["acoustic", "afrobeat", "alt-rock", "alternative", "ambient", "anime",
-             "black-metal", "bluegrass", "blues", "bossanova", "brazil", "breakbeat", "british", "cantopop", 
-             "chicago-house", "children", "chill", "classical", "club", "comedy", "country", "dance", "dancehall", 
-             "death-metal", "deep-house", "detroit-techno", "disco", "disney", "drum-and-bass", "dub", "dubstep", "edm", 
-             "electro", "electronic", "emo", "folk", "forro", "french", "funk", "garage", "german", "gospel", "goth", "grindcore", 
-             "groove", "grunge", "guitar", "happy", "hard-rock", "hardcore", "hardstyle", "heavy-metal", "hip-hop", "holidays",
-               "honky-tonk", "house", "idm", "indian", "indie", "indie-pop", "industrial", "iranian", "j-dance", "j-idol", "j-pop",
-               "j-rock", "jazz", "k-pop", "kids", "latin", "latino", "malay", "mandopop", "metal", "metal-misc", "metalcore", 
-               "minimal-techno", "movies", "mpb", "new-age", "new-release", "opera", "pagode", "party", "philippines-opm", "piano", 
-               "pop", "pop-film", "post-dubstep", "power-pop", "progressive-house", "psych-rock", "punk", "punk-rock", "r-n-b", 
-               "rainy-day", "reggae", "reggaeton", "road-trip", "rock", "rock-n-roll", "rockabilly", "romance", "sad", "salsa", 
-               "samba", "sertanejo", "show-tunes", "singer-songwriter", "ska", "sleep", "songwriter", "soul", "soundtracks",
-                 "spanish", "study", "summer", "swedish", "synth-pop", "tango", "techno", "trance", "trip-hop", "turkish", 
-                 "work-out", "world-music"]
-    }
-    test_data = test_data["genres"]
-    return render_template("index.html", sorted_array=test_data)
 
-@app.route("/callback/q")
-def callback():
-    # Auth Step 4: Requests refresh and access tokens
-    auth_token = request.args["code"]
-    code_payload = {
-        "grant_type": "authorization_code",
-        "code": str(auth_token),
-        "redirect_uri": REDIRECT_URI,
-        "client_id": CLIENT_ID,
-        "client_secret": CLIENT_SECRET,
-    }
-    post_request = requests.post(SPOTIFY_TOKEN_URL, data=code_payload)
+# route to redirect page
+@app.route('/redirect')
+def redirectPage():
+    sp_oauth = create_spotify_oauth()
+    session.clear()
+    code = request.args.get('code')
+    token_info = sp_oauth.get_access_token(code)
+    session[TOKEN_INFO] = token_info
+    cur.execute('INSERT INTO users (access_token) VALUES (%s) RETURNING id',
+                (token_info['access_token'],))
+    session['user_id'] = cur.fetchone()[0]
+    conn.commit()
+    return redirect(url_for('recommend', _external=True))
 
-    # Auth Step 5: Tokens are Returned to Application
-    response_data = json.loads(post_request.text)
-    access_token = response_data["access_token"]
-    refresh_token = response_data["refresh_token"]
-    token_type = response_data["token_type"]
-    expires_in = response_data["expires_in"]
-
-    # Auth Step 6: Use the access token to access Spotify API
-    authorization_header = {"Authorization": f"Bearer {access_token}"}
-
-    # Get profile data
-    user_profile_api_endpoint = f"{SPOTIFY_API_URL}/me"
-    profile_response = requests.get(
-        user_profile_api_endpoint, headers=authorization_header
-    )
-    profile_data = json.loads(profile_response.text)
-
-    # Get user playlist data
-    playlist_api_endpoint = f'{profile_data["href"]}/playlists'
-    playlists_response = requests.get(
-        playlist_api_endpoint, headers=authorization_header
-    )
-    playlist_data = json.loads(playlists_response.text)
-    
-    # get genre
-    # topitem_api_endpoint= f'{SPOTIFY_API_URL}/me/top/artists'
-    # topitem_genre=requests.get(
-    #     topitem_api_endpoint, headers=authorization_header
-    # )
-    # print(str(topitem_genre))
-    # topitem_data=topitem_genre.json()
-    # json.loads(topitem_genre.text)
-
-    # Combine profile and playlist data to display
-    display_arr = [profile_data] + playlist_data["items"]
-    # display_arr = topitem_data["items"]
-    # display_genres= [genre for genres in display_arr["genres"] for genre in genres]
-
-    return render_template("index.html", sorted_array=display_arr)
+# function to convert dictionary to list
 
 
-api_url = "https://catfact.ninja/fact"
+def dict_to_list(dict):
+    list = [value for key, value in dict.items()]
+    list2 = [item for list[0] in list for item in list[0]]
+    i = 0
+    result = []
+    for v in list2:
+        result = result + [tuple((i, v))]
+        i = i + 1
+    return result
 
 
-@app.route("/callapi")
-def call_api():
-    response = requests.get(api_url)
-    return response.json()
+# function that get movies from TMDB api
 
 
-@app.get("/db/select/<user_id>")
-def read_db(user_id: str):
-    some_information_about_user = (
-        f"pretend it queries user {{{user_id}}} in the database. (placeholder in dev)"
-    )
-    if DEBUG_ENV != "dev":
-        try:
-            # connect to the PostgreSQL database
-            conn = psycopg2.connect(config)  # set in .env, don't publish .env to github
-            # create a new cursor
-            cursor = conn.cursor()
-            # execute SELECT statement
-            cursor.execute(f"SELECT * FROM {TABLENAME} c WHERE c.user_id = {user_id}")
-            # get all records back
-            some_information_about_user = cursor.fetchall()
-            # close communication with the database
-            cursor.close()
-        except (Exception, psycopg2.DatabaseError) as error:
-            print(error)
-        finally:
-            if conn is not None:
-                conn.close()
-    return some_information_about_user
+def get_movies():
+    list_movies = []
+    i = 0
+    for page in range(1, 200):
+        response_TMDB = urllib.request.urlopen(
+            'https://api.themoviedb.org/3/movie/popular?api_key=apikey&language=en-US&page={page}')
+        TMDB_data = response_TMDB.read()
+        dict = json.loads(TMDB_data)
+        for film in dict['results']:
+            list_movies = list_movies + \
+                [tuple((i, film["original_title"], film["genre_ids"]))]
+            i = i+1
+    return list_movies
+
+# function to store movies into database
 
 
-@app.route(
-    "/db/update/<user_id>",
-    methods=(lambda: ["GET", "POST"], lambda: ["POST"])[DEBUG_ENV != "dev"](),
-)
-def update_user_movie_recommendation(user_id: str):
-    def create_user_if_not_exist(user_id: str, cursor):
-        # check user exist
-        cursor.execute(
-            f"SELECT exists ( SELECT 1 FROM {TABLENAME} c WHERE c.user_id = {user_id})"
-        )
-        if not cursor.fetchone()[0]:
-            # insert user if not exist
-            cursor.execute(
-                f"INSERT INTO {TABLENAME}(user_id) VALUES({user_id}) RETURNING user_id;"
-            )
-        return cursor.fetchone()[0]
+def store_movies(movies_list):
+    cur.execute('UPDATE users SET movies = %s WHERE id = %s',
+                (movies_list, session['user_id']))
+    conn.commit()
+# function to match spotify genres to movie genres
 
-    movie_list = f"pretend it updates user {{{user_id}}} with movie_list [Test,None,Nah,OMG,Ahh] in the database. (placeholder in dev)"
-    updated_rows = 0
-    if DEBUG_ENV != "dev":
-        movie_list = call_api()["movie_list"]
-        try:
-            # connect to the PostgreSQL database
-            conn = psycopg2.connect(config)  # set in .env, don't publish .env to github
-            # create a new cursor
-            cursor = conn.cursor()
-            # create user if not exist
-            if not create_user_if_not_exist(user_id, cursor):
-                raise ValueError(
-                    "create_user_if_not_exist did something unexpected, check database if something is wrong"
-                )
-            # execute UPDATE query
-            cursor.execute(
-                f"UPDATE {TABLENAME} SET movie_list = {movie_list} WHERE user_id = {user_id}"
-            )
-            # get the number of updated rows
-            updated_rows = cursor.rowcount
-            # Commit the changes to the database
-            conn.commit()
-            # Close communication with the PostgreSQL database
-            cursor.close()
-        except (Exception, psycopg2.DatabaseError) as error:
-            print(error)
-        finally:
-            if conn is not None:
-                conn.close()
 
+def match_genres(genres, movies):
+    movie_list = []
+    for genre in genres:
+        if "rock" in genre[1]:
+            for movie in movies:
+                if 28 in movie[2] or 10752 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "rap" in genre[1]:
+            for movie in movies:
+                if 28 in movie[2] or 878 in movie[2] or 53 in movie[2] or 18 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "hip" in genre[1] or "hop" in genre[1]:
+            for movie in movies:
+                if 28 in movie[2] or 53 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "pop" in genre[1]:
+            for movie in movies:
+                if 12 in movie[2] or 10749 in movie[2] or 10770 in movie[2] or 18 in movie[2] or 35 in movie[2] or 10751 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "orchestra" in genre[1]:
+            for movie in movies:
+                if 12 in movie[2] or 10402 in movie[2] or 99 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "folk" in genre[1]:
+            for movie in movies:
+                if 12 in movie[2] or 14 in movie[2] or 36 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "anime" in genre[1]:
+            for movie in movies:
+                if 16 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "comedy" in genre[1]:
+            for movie in movies:
+                if 35 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "sad" in genre[1]:
+            for movie in movies:
+                if 18 in movie[2] or 80 in movie[2] or 10749 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "soul" in genre[1]:
+            for movie in movies:
+                if 80 in movie[2] or 18 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "indie" in genre[1]:
+            for movie in movies:
+                if 99 in movie[2] or 14 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "classic" in genre[1]:
+            for movie in movies:
+                if 99 in movie[2] or 36 in movie[2] or 10752 in movie[2] or 9648 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "blues" in genre[1]:
+            for movie in movies:
+                if 18 in movie[2] or 80 in movies[2] or 9648 in movies[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "happy" in genre[1]:
+            for movie in movies:
+                if 10751 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "opera" in genre[1]:
+            for movie in movies:
+                if 36 in movie[2] or 18 in movie[2] or 10479 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "old" in genre[1]:
+            for movie in movies:
+                if 36 in movie[2] or 10752 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "metal" in genre[1]:
+            for movie in movies:
+                if 27 in movie[2] or 53 in movie[2] or 878 in movie[2] or 28 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "emo" in genre[1]:
+            for movie in movies:
+                if 27 in movie[2] or 53 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "punk" in genre[1]:
+            for movie in movies:
+                if 27 in movie[2] or 53 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "grunge" in genre[1]:
+            for movie in movies:
+                if 80 in movie[2] or 27 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "show tunes" in genre[1]:
+            for movie in movies:
+                if 10402 in movie[2] or 10749 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "jazz" in genre[1]:
+            for movie in movies:
+                if 80 in movie[2] or 9648 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "k-pop" in genre[1]:
+            for movie in movies:
+                if 10749 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "techno" in genre[1]:
+            for movie in movies:
+                if 878 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "dubstep" in genre[1]:
+            for movie in movies:
+                if 878 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "western" in genre[1]:
+            for movie in movies:
+                if 37 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
+        if "country" in genre[1]:
+            for movie in movies:
+                if 37 in movie[2] or 10749 in movie[2] or 18 in movie[2]:
+                    if movie[1] not in movie_list:
+                        movie_list = movie_list + [movie[1]]
     return movie_list
 
+# route to where genres are gotten
 
-if __name__ == "__main__":
-    app.run(debug=True, port=PORT)
+
+@ app.route('/recommend')
+# function that gets genres from spotify and displays movies
+def recommend():
+    try:
+        token_info = get_token()
+    except:
+        print("User not logged in")
+        redirect(url_for("login", _external=False))
+
+    sp = spotipy.Spotify(auth=token_info['access_token'])
+    genres = sp.recommendation_genre_seeds()
+    genre_list = dict_to_list(genres)
+    list_movies = get_movies()
+    movies_list = match_genres(genre_list, list_movies)
+    store_movies(movies_list)
+    cur.execute('SELECT movies FROM users WHERE id = %s',
+                (session['user_id'],))
+    conn.commit()
+    movies = cur.fetchone()[0]
+    movies = movies[0:50]
+
+    return render_template('muvie.html', movies=movies)
+
+# checks if token is expired
+
+
+def get_token():
+    token_info = session.get(TOKEN_INFO, None)
+    if not token_info:
+        raise "exception"
+    now = int(time.time())
+    is_expired = token_info['expires_at'] - now < 60
+    if (is_expired):
+        sp_oauth = create_spotify_oauth()
+        token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
+    return token_info
+
+
+# spotify api stuff ***dont post clientsecret to github***
+clientID = ""
+clientSecret = ""
+
+# OAuth information
+
+
+def create_spotify_oauth():
+    return SpotifyOAuth(
+        client_id="",
+        client_secret="",
+        redirect_uri=url_for('redirectPage', _external=True),
+        scope="user-library-read")
