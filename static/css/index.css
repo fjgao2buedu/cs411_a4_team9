@@ -8,6 +8,7 @@ body{
     position: relative;
 /*  height: 5000px;*/
 }
+
 .header{
     padding: 18px 0;
     width: 100%;
@@ -20,7 +21,6 @@ body{
     margin: 0 auto;
 }
 
-
 /*banner*/
 .banner{
             width: 100%;
@@ -29,10 +29,6 @@ body{
             overflow: hidden;
             position: relative;
 }
-
-        
-        
-        
 
 .con_area{
     padding-top: 30px;
@@ -51,21 +47,22 @@ h1{
     font-size: 36px;
     color: #4098ea;
     font-family:"Times New Roman", Times, serif;
+    text-align: center;
 }
-
-
 
 /*底部*/
 #end{
     margin-top: 30px;
     background:#202334;
 }
+
 .company{
     width: 100%;
     display: inline-block;
     padding: 20px 0px;
     text-align: center;
 }
+
 /*详情页标题*/
 .breadcrumb-area-content h2{
     margin-top: 30px;

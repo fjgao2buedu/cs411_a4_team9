@@ -6,61 +6,44 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Muvie</title>
-	<link rel="stylesheet" href="index.css" />
-
+	<link rel="stylesheet" href="static/css/index.css" />
 </head>
-<style>
-	h1 {
-		text-align: center;
-	}
-</style>
 
 <body>
-
 	<header class="header">
 		<div class="container">
 			<div class="header_area">
 				<h1>Welcome to Muvie!</h1>
 				<h1>Movie Recommendendations</h1>
-
 			</div>
-
-
 	</header>
 
 	<section id="content">
-
 		<div class="banner">
 			<ul class="list">
 				<li class="on"><a href="#"><img
 							src="https://www.undergroundpress.co.za/templates/yootheme/cache/8c/music--film-editing-wallpaper-8c5af483.jpeg"
 							alt="" style="width:1300px;height:500px;"" /></a></li>
-						
-					</ul>
-					
-					
-					
+			</ul>
+		</div>
+		<div class=" con_area">
+			<div class="container">
+				<div class="jd_con">
+					<div class="con_top">
+						<h1>
+							<i class="icofont icofont-coffee-cup"></i>
+							You may like these movies based on the songs you listen to on Spotify:
+						</h1>
+					</div>
 				</div>
-				
-				
-			
-				<div class=" con_area">
-						<div class="container">
-							<div class="jd_con">
-								<div class="con_top">
-									<h1>
-										<i class="icofont icofont-coffee-cup"></i>
-										You may like these movies based on the songs you listen to on Spotify:
-									</h1>
-
-								</div>
-							</div>
-							{% for movie in movies %}
-							<p>{{movie}} </p>
-							{% endfor %}
-
-						</div>
-
+				{% for movie in movies %}
+				<div>
+					<p>{{movie}}</p>
+					<a href="https://www.imdb.com/find/?q={{movie}}">See More About {{movie}}</a>
+				</div>
+				{% endfor %}
+			</div>
+		</div>
 	</section>
 	<!--end start-->
 	<footer id="end">
