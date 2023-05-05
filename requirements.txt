@@ -1,4 +1,5 @@
 Flask
-requests
+spotipy
 psycopg2-binary
+urllib3
 python-dotenv
