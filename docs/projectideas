@@ -1,0 +1,12 @@
+CS411 Team 9 Project Ideas
+
+Idea #1: Our first idea is a web application that recommends movies based on your music taste. It will use the IMDB movie database and api as well as the spotify database and api. 
+A user will log in using google for third party authentication. This can be utilized by people to combine their interests and find new media that relates to what they like. 
+Music interests says a lot about a person and can help someone find a new movie to watch if they are struggling to find something they’ll actually enjoy instead of scrolling 
+through Netflix for hours on end to try to choose something
+
+Idea #2: Our second idea is a web application that tells you the nearest dunkin donuts then generates a playlist for the length of time to that dunkin donuts of upbeat music or sad music. 
+It will use an api that utilizes a map to find the dunkin and then spotify api/database for the music playlist. It can use google for third party authentication. This will motivate people 
+on their walk or set the mood that they want as they go. 
+.
+

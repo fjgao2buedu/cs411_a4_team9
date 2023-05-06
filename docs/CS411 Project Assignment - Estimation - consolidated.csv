@@ -1,0 +1,13 @@
+User Story 1,time estimate
+a frontend to place the app,3h
+OAuth to spotify,2.5h
+store the token,2h
+test api for spotify,2.5h
+test api for imdb,2.5h
+get user playlist genre,0.5h
+query imdb with the genres,0.5h
+algorithm to sort the movies,1h
+database to store user and their movie list,3h
+option to remove movie form list,1h
+excluded movie list in database,1h
+total, 19.5 h
